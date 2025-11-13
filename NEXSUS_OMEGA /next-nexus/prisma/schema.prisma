@@ -1,0 +1,318 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  apiKey    String?
+  plan      String   @default("free")
+  tenantId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  revenueStreams RevenueStream[]
+  aiConversations AIConversation[]
+  deployedSites   DeployedSite[]
+  subscriptions   Subscription[]
+  payments        Payment[]
+  notifications   Notification[]
+  socialPosts     SocialPost[]
+  socialAccounts  SocialAccount[]
+  tenant          Tenant?         @relation(fields: [tenantId], references: [id])
+
+  @@map("users")
+}
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  subdomain   String   @unique
+  customDomain String?
+  branding    Json?    // Colors, logo, etc
+  settings    Json?    // Custom settings
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
+
+  @@map("tenants")
+}
+
+model RevenueStream {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  type        String
+  status      String   @default("offline")
+  revenue     Float    @default(0)
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("revenue_streams")
+}
+
+model AIConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  model     String
+  prompt    String
+  response  String
+  tokens    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_conversations")
+}
+
+model DeployedSite {
+  id        String   @id @default(cuid())
+  userId    String
+  subdomain String
+  template  String
+  url       String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("deployed_sites")
+}
+
+model SubscriptionPlan {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  displayName String
+  description String
+  price       Float
+  currency    String   @default("usd")
+  interval    String   @default("month") // month, year
+  features    Json     // Array of feature objects
+  limits      Json     // Usage limits
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id                String            @id @default(cuid())
+  userId            String
+  planId            String
+  status            String            @default("active")
+  stripeId          String?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd Boolean           @default(false)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  userId        String
+  subscriptionId String?
+  amount        Float
+  currency      String   @default("usd")
+  status        String   @default("pending")
+  stripeId      String?
+  description   String?
+  createdAt     DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@map("payments")
+}
+
+model CryptoPrice {
+  id        String   @id @default(cuid())
+  symbol    String   @unique
+  price     Float
+  change24h Float
+  volume    Float
+  updatedAt DateTime @updatedAt
+
+  @@map("crypto_prices")
+}
+
+model NewsArticle {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  source      String
+  url         String
+  sentiment   String
+  publishedAt DateTime
+  createdAt   DateTime @default(now())
+
+  @@map("news_articles")
+}
+
+model SystemMetric {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  value     Float
+  unit      String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_metrics")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // alert, info, warning, error
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  data      Json?    // Additional data
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model SocialAccount {
+  id          String   @id @default(cuid())
+  userId      String
+  platform    String   // twitter, linkedin, etc
+  accountId   String
+  accountName String
+  accessToken String
+  refreshToken String?
+  expiresAt   DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@map("social_accounts")
+}
+
+model SocialPost {
+  id          String   @id @default(cuid())
+  userId      String
+  platform    String   // twitter, linkedin, etc
+  content     String
+  scheduledAt DateTime?
+  postedAt    DateTime?
+  status      String   @default("draft") // draft, scheduled, posted, failed
+  postId      String?  // Platform-specific post ID
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("social_posts")
+}
+
+model HackingTool {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  category    String   // penetration, forensics, network, web, mobile, iot
+  difficulty  String   @default("intermediate") // beginner, intermediate, advanced, expert
+  tags        String[] // Array of tags
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  scans       HackingScan[]
+  exploits    Exploit[]
+
+  @@map("hacking_tools")
+}
+
+model HackingScan {
+  id          String   @id @default(cuid())
+  userId      String
+  toolId      String
+  target      String   // URL, IP, domain
+  scanType    String   // vulnerability, port, web, network
+  status      String   @default("pending") // pending, running, completed, failed
+  results     Json?    // Scan results
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tool HackingTool @relation(fields: [toolId], references: [id])
+
+  @@map("hacking_scans")
+}
+
+model Exploit {
+  id          String   @id @default(cuid())
+  toolId      String
+  name        String
+  cve         String?  // CVE identifier
+  severity    String   @default("medium") // low, medium, high, critical
+  description String
+  payload     String?  // Exploit code/payload
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  tool HackingTool @relation(fields: [toolId], references: [id])
+
+  @@map("exploits")
+}
+
+model EnterpriseFeature {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  displayName String
+  description String
+  category    String   // security, analytics, automation, integration
+  tier        String   @default("enterprise") // pro, enterprise
+  isEnabled   Boolean  @default(true)
+  config      Json?    // Feature configuration
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  usages      EnterpriseUsage[]
+
+  @@map("enterprise_features")
+}
+
+model EnterpriseUsage {
+  id         String   @id @default(cuid())
+  userId     String
+  featureId  String
+  usageCount Int      @default(0)
+  lastUsedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feature EnterpriseFeature  @relation(fields: [featureId], references: [id])
+
+  @@map("enterprise_usage")
+}

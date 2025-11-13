@@ -1,0 +1,63 @@
+{
+  "arbitrage": {
+    "name": "Cross-Exchange Arbitrage",
+    "description": "Exploit price differences between exchanges",
+    "min_profit_threshold": 0.005,
+    "max_slippage": 0.002,
+    "exchanges": ["binance", "kraken", "coinbase"],
+    "pairs": ["BTC/USDT", "ETH/USDT", "ADA/USDT", "DOT/USDT", "LINK/USDT"],
+    "capital_allocation": 0.3,
+    "enabled": true
+  },
+  "market_making": {
+    "name": "Market Making",
+    "description": "Provide liquidity and earn spreads",
+    "spread_target": 0.002,
+    "inventory_skew": 0.1,
+    "order_refresh_interval": 30,
+    "pairs": ["BTC/USDT", "ETH/USDT"],
+    "capital_allocation": 0.2,
+    "enabled": true
+  },
+  "momentum": {
+    "name": "Momentum Trading",
+    "description": "Follow trending assets",
+    "lookback_period": 24,
+    "entry_threshold": 0.05,
+    "exit_threshold": 0.02,
+    "stop_loss": 0.03,
+    "pairs": ["BTC/USDT", "ETH/USDT", "ADA/USDT"],
+    "capital_allocation": 0.2,
+    "enabled": true
+  },
+  "scalping": {
+    "name": "Scalping",
+    "description": "Quick small profits on micro-movements",
+    "target_profit": 0.001,
+    "max_hold_time": 300,
+    "volume_threshold": 1000000,
+    "pairs": ["BTC/USDT", "ETH/USDT"],
+    "capital_allocation": 0.1,
+    "enabled": false
+  },
+  "mean_reversion": {
+    "name": "Mean Reversion",
+    "description": "Bet on price returning to mean",
+    "deviation_threshold": 2.0,
+    "mean_period": 200,
+    "max_hold_time": 3600,
+    "pairs": ["BTC/USDT", "ETH/USDT"],
+    "capital_allocation": 0.1,
+    "enabled": false
+  },
+  "grid_trading": {
+    "name": "Grid Trading",
+    "description": "Place orders at regular intervals",
+    "grid_levels": 20,
+    "grid_spacing": 0.005,
+    "profit_ratio": 0.8,
+    "pairs": ["BTC/USDT", "ETH/USDT"],
+    "capital_allocation": 0.1,
+    "enabled": false
+  }
+}
